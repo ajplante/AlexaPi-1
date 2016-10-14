@@ -576,7 +576,7 @@ def setup():
 	for sig in (signal.SIGABRT, signal.SIGILL, signal.SIGINT, signal.SIGSEGV, signal.SIGTERM):
 		signal.signal(sig, cleanup)
 
-	gpio.setwarnings(False)
+#	gpio.setwarnings(False)
 	gpio.cleanup()
 	gpio.setmode(gpio.BCM)
 	gpio.setup(config['raspberrypi']['button'], gpio.IN, pull_up_down=gpio.PUD_UP)
