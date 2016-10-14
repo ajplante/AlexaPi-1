@@ -37,6 +37,17 @@ import alexapi.config
 
 with open(alexapi.config.filename, 'r') as stream:
 	config = yaml.load(stream)
+Settings
+#button = 18 		# GPIO Pin with button connected
+button = port.PA20 		# GPIO Pin with button connected
+#plb_light = 24		# GPIO Pin for the playback/activity light
+plb_light = port.PA9		# GPIO Pin for the playback/activity light
+#rec_light = 25		# GPIO Pin for the recording light
+rec_light = port.PA8		# GPIO Pin for the recording light
+lights = [plb_light, rec_light] 	# GPIO Pins with LED's connected
+#device = "plughw:1" # Name of your microphone/sound card in arecord -L
+device = "plughw:audiocodec" # Name of your microphone/sound card in arecord -L
+playlists = set(['pls','m3u','ash']) 
 
 #Get arguments
 parser = optparse.OptionParser()
@@ -260,8 +271,8 @@ def process_response(r):
 		if 'directives' in j['messageBody']:
 			if len(j['messageBody']['directives']) == 0:
 				if debug: print("0 Directives received")
-				gpio.output(config['raspberrypi']['rec_light'], gpio.LOW)
-				gpio.output(config['raspberrypi']['plb_light'], gpio.LOW)
+				gpio.output(rec_light, gpio.LOW)
+				gpio.output(plb_light, gpio.LOW)
 			for directive in j['messageBody']['directives']:
 				if directive['namespace'] == 'SpeechSynthesizer':
 					if directive['name'] == 'speak':
@@ -322,22 +333,22 @@ def process_response(r):
 			
 		return
 	elif r.status_code == 204:
-		gpio.output(config['raspberrypi']['rec_light'], gpio.LOW)
+		gpio.output(rec_light, gpio.LOW)
 		for x in range(0, 3):
 			time.sleep(.2)
-			gpio.output(config['raspberrypi']['plb_light'], gpio.HIGH)
+			gpio.output(plb_light, gpio.HIGH)
 			time.sleep(.2)
-			gpio.output(config['raspberrypi']['plb_light'], gpio.LOW)
+			gpio.output(plb_light, gpio.LOW)
 		if debug: print("{}Request Response is null {}(This is OKAY!){}".format(bcolors.OKBLUE, bcolors.OKGREEN, bcolors.ENDC))
 	else:
 		print("{}(process_response Error){} Status Code: {}".format(bcolors.WARNING, bcolors.ENDC, r.status_code))
 		r.connection.close()
-		gpio.output(config['raspberrypi']['lights'], gpio.LOW)
+		gpio.output(lights, gpio.LOW)
 		for x in range(0, 3):
 			time.sleep(.2)
-			gpio.output(config['raspberrypi']['rec_light'], gpio.HIGH)
+			gpio.output(rec_light, gpio.HIGH)
 			time.sleep(.2)
-			gpio.output(config['raspberrypi']['lights'], gpio.LOW)
+			gpio.output(lights, gpio.LOW)
 
 
 
@@ -347,7 +358,7 @@ def play_audio(file, offset=0, overRideVolume=0):
 		file = tuneinplaylist(file)
 	global nav_token, p, audioplaying
 	if debug: print("{}Play_Audio Request for:{} {}".format(bcolors.OKBLUE, bcolors.ENDC, file))
-	gpio.output(config['raspberrypi']['plb_light'], gpio.HIGH)
+	gpio.output(plb_light, gpio.HIGH)
 	i = vlc.Instance('--aout=alsa') # , '--alsa-audio-device=mono', '--file-logging', '--logfile=vlc-log.txt')
 	m = i.media_new(file)
 	p = i.media_player_new()
@@ -433,7 +444,7 @@ def detect_button(channel):
         button_pressed = True
         if debug: print("{}Button Pressed! Recording...{}".format(bcolors.OKBLUE, bcolors.ENDC))
         time.sleep(.5) # time for the button input to settle down
-        while (gpio.input(config['raspberrypi']['button'])==0):
+        while (gpio.input(button)==0):
                 button_pressed = True
                 time.sleep(.1)
                 if time.time() - buttonPress > 10: # pressing button for 10 seconds triggers a system halt
@@ -447,7 +458,7 @@ def detect_button(channel):
 def silence_listener(throwaway_frames):
 		global button_pressed
 		# Reenable reading microphone raw data
-		inp = alsaaudio.PCM(alsaaudio.PCM_CAPTURE, alsaaudio.PCM_NORMAL, config['sound']['device'])
+		inp = alsaaudio.PCM(alsaaudio.PCM_CAPTURE, alsaaudio.PCM_NORMAL, device)
 		inp.setchannels(1)
 		inp.setrate(VAD_SAMPLERATE)
 		inp.setformat(alsaaudio.PCM_FORMAT_S16_LE)
@@ -491,13 +502,13 @@ def silence_listener(throwaway_frames):
 			# (allow user to speak for total of max recording length if they haven't said anything yet)
 			if (numSilenceRuns != 0) and ((silenceRun * VAD_FRAME_MS) > VAD_SILENCE_TIMEOUT):
 				thresholdSilenceMet = True
-			gpio.output(config['raspberrypi']['rec_light'], gpio.HIGH)
+			gpio.output(rec_light, gpio.HIGH)
 
 		if debug: print ("Debug: End recording")
 
 		# if debug: play_audio(resources_path+'beep.wav', 0, 100)
 
-		gpio.output(config['raspberrypi']['rec_light'], gpio.LOW)
+		gpio.output(rec_light, gpio.LOW)
 		rf = open(tmp_path + 'recording.wav', 'w')
 		rf.write(audio)
 		rf.close()
@@ -506,12 +517,12 @@ def silence_listener(throwaway_frames):
 
 def start():
 	global audioplaying, p, vad, button_pressed
-	gpio.add_event_detect(config['raspberrypi']['button'], gpio.FALLING, callback=detect_button, bouncetime=100) # threaded detection of button press
+	gpio.add_event_detect(button, gpio.FALLING, callback=detect_button, bouncetime=100) # threaded detection of button press
 	while True:
 		record_audio = False
 		
 		# Enable reading microphone raw data
-		inp = alsaaudio.PCM(alsaaudio.PCM_CAPTURE, alsaaudio.PCM_NORMAL, config['sound']['device'])
+		inp = alsaaudio.PCM(alsaaudio.PCM_CAPTURE, alsaaudio.PCM_NORMAL, device)
 		inp.setchannels(1)
 		inp.setrate(16000)
 		inp.setformat(alsaaudio.PCM_FORMAT_S16_LE)
@@ -581,14 +592,14 @@ def setup():
 #	gpio.setmode(gpio.BCM)
 	gpio.init()
 #	gpio.setup(config['raspberrypi']['button'], gpio.IN, pull_up_down=gpio.PUD_UP)
-	gpio.setcfg(['raspberrypi']['button'], gpio.INPUT)
-        gpio.pullup(['raspberrypi']['button'], gpio.PULLUP)
+	gpio.setcfg([button, gpio.INPUT)
+        gpio.pullup([button, gpio.PULLUP)
 #	gpio.setup(config['raspberrypi']['lights'], gpio.OUT)
-	gpio.setcfg(['raspberrypi']['lights[0]'], gpio.OUTPUT)
-        gpio.setcfg(['raspberrypi']['lights[1]'], gpio.OUTPUT)
+	gpio.setcfg(lights[0], gpio.OUTPUT)
+        gpio.setcfg(lights[1] gpio.OUTPUT)
 #	gpio.output(config['raspberrypi']['lights'], gpio.LOW)
-	gpio.output(['raspberrypi']['lights[0]'], gpio.LOW)
-        gpio.output(['raspberrypi']['lights[1]'], gpio.LOW)
+	gpio.output(lights[0], gpio.LOW)
+        gpio.output(lights[1], gpio.LOW)
 	while internet_on() == False:
 		print(".")
 	token = gettoken()
@@ -596,14 +607,14 @@ def setup():
 		while True:
 			for x in range(0, 5):
 				time.sleep(.1)
-				gpio.output(config['raspberrypi']['rec_light'], gpio.HIGH)
+				gpio.output(rec_light, gpio.HIGH)
 				time.sleep(.1)
-				gpio.output(config['raspberrypi']['rec_light'], gpio.LOW)
+				gpio.output(rec_light, gpio.LOW)
 	for x in range(0, 5):
 		time.sleep(.1)
-		gpio.output(config['raspberrypi']['plb_light'], gpio.HIGH)
+		gpio.output(plb_light, gpio.HIGH)
 		time.sleep(.1)
-		gpio.output(config['raspberrypi']['plb_light'], gpio.LOW)
+		gpio.output(plb_light, gpio.LOW)
 	if (silent == False): play_audio(resources_path+"hello.mp3")
 
 
