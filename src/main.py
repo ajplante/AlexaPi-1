@@ -7,7 +7,7 @@ import signal
 import shutil
 import random
 import time
-import RPi.GPIO as GPIO
+# import RPi.gpio as gpio
 import alsaaudio
 import wave
 import requests
@@ -23,6 +23,8 @@ import getch
 import sys
 import fileinput
 import datetime
+from pyA20.gpio import gpio
+from pyA20.gpio import port
 
 import tunein
 import webrtcvad
@@ -142,7 +144,7 @@ def gettoken():
 def alexa_speech_recognizer():
 	# https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/rest/speechrecognizer-requests
 	if debug: print("{}Sending Speech Request...{}".format(bcolors.OKBLUE, bcolors.ENDC))
-	# GPIO.output(config['raspberrypi']['plb_light'], GPIO.HIGH)
+	# gpio.output(config['raspberrypi']['plb_light'], gpio.HIGH)
 	url = 'https://access-alexa-na.amazon.com/v1/avs/speechrecognizer/recognize'
 	headers = {'Authorization' : 'Bearer %s' % gettoken()}
 	d = {
@@ -179,7 +181,7 @@ def alexa_getnextitem(nav_token):
 	time.sleep(0.5)
         if audioplaying == False:
 		if debug: print("{}Sending GetNextItem Request...{}".format(bcolors.OKBLUE, bcolors.ENDC))
-		# GPIO.output(config['raspberrypi']['plb_light'], GPIO.HIGH)
+		# gpio.output(config['raspberrypi']['plb_light'], gpio.HIGH)
 		url = 'https://access-alexa-na.amazon.com/v1/avs/audioplayer/getNextItem'
 		headers = {'Authorization' : 'Bearer %s' % gettoken(), 'content-type' : 'application/json; charset=UTF-8'}
 		d = {
@@ -258,12 +260,12 @@ def process_response(r):
 		if 'directives' in j['messageBody']:
 			if len(j['messageBody']['directives']) == 0:
 				if debug: print("0 Directives received")
-				GPIO.output(config['raspberrypi']['rec_light'], GPIO.LOW)
-				GPIO.output(config['raspberrypi']['plb_light'], GPIO.LOW)
+				gpio.output(config['raspberrypi']['rec_light'], gpio.LOW)
+				gpio.output(config['raspberrypi']['plb_light'], gpio.LOW)
 			for directive in j['messageBody']['directives']:
 				if directive['namespace'] == 'SpeechSynthesizer':
 					if directive['name'] == 'speak':
-						GPIO.output(config['raspberrypi']['rec_light'], GPIO.LOW)
+						gpio.output(config['raspberrypi']['rec_light'], gpio.LOW)
 						play_audio("file://" + tmp_path + directive['payload']['audioContent'].lstrip("cid:")+".mp3")
 					for directive in j['messageBody']['directives']: # if Alexa expects a response
 						if directive['namespace'] == 'SpeechRecognizer': # this is included in the same string as above if a response was expected
@@ -320,22 +322,22 @@ def process_response(r):
 			
 		return
 	elif r.status_code == 204:
-		GPIO.output(config['raspberrypi']['rec_light'], GPIO.LOW)
+		gpio.output(config['raspberrypi']['rec_light'], gpio.LOW)
 		for x in range(0, 3):
 			time.sleep(.2)
-			GPIO.output(config['raspberrypi']['plb_light'], GPIO.HIGH)
+			gpio.output(config['raspberrypi']['plb_light'], gpio.HIGH)
 			time.sleep(.2)
-			GPIO.output(config['raspberrypi']['plb_light'], GPIO.LOW)
+			gpio.output(config['raspberrypi']['plb_light'], gpio.LOW)
 		if debug: print("{}Request Response is null {}(This is OKAY!){}".format(bcolors.OKBLUE, bcolors.OKGREEN, bcolors.ENDC))
 	else:
 		print("{}(process_response Error){} Status Code: {}".format(bcolors.WARNING, bcolors.ENDC, r.status_code))
 		r.connection.close()
-		GPIO.output(config['raspberrypi']['lights'], GPIO.LOW)
+		gpio.output(config['raspberrypi']['lights'], gpio.LOW)
 		for x in range(0, 3):
 			time.sleep(.2)
-			GPIO.output(config['raspberrypi']['rec_light'], GPIO.HIGH)
+			gpio.output(config['raspberrypi']['rec_light'], gpio.HIGH)
 			time.sleep(.2)
-			GPIO.output(config['raspberrypi']['lights'], GPIO.LOW)
+			gpio.output(config['raspberrypi']['lights'], gpio.LOW)
 
 
 
@@ -345,7 +347,7 @@ def play_audio(file, offset=0, overRideVolume=0):
 		file = tuneinplaylist(file)
 	global nav_token, p, audioplaying
 	if debug: print("{}Play_Audio Request for:{} {}".format(bcolors.OKBLUE, bcolors.ENDC, file))
-	GPIO.output(config['raspberrypi']['plb_light'], GPIO.HIGH)
+	gpio.output(config['raspberrypi']['plb_light'], gpio.HIGH)
 	i = vlc.Instance('--aout=alsa') # , '--alsa-audio-device=mono', '--file-logging', '--logfile=vlc-log.txt')
 	m = i.media_new(file)
 	p = i.media_player_new()
@@ -363,7 +365,7 @@ def play_audio(file, offset=0, overRideVolume=0):
 	p.play()
 	while audioplaying:
 		continue
-	GPIO.output(config['raspberrypi']['plb_light'], GPIO.LOW)
+	gpio.output(config['raspberrypi']['plb_light'], gpio.LOW)
 
 		
 def tuneinplaylist(url):
@@ -431,7 +433,7 @@ def detect_button(channel):
         button_pressed = True
         if debug: print("{}Button Pressed! Recording...{}".format(bcolors.OKBLUE, bcolors.ENDC))
         time.sleep(.5) # time for the button input to settle down
-        while (GPIO.input(config['raspberrypi']['button'])==0):
+        while (gpio.input(config['raspberrypi']['button'])==0):
                 button_pressed = True
                 time.sleep(.1)
                 if time.time() - buttonPress > 10: # pressing button for 10 seconds triggers a system halt
@@ -489,13 +491,13 @@ def silence_listener(throwaway_frames):
 			# (allow user to speak for total of max recording length if they haven't said anything yet)
 			if (numSilenceRuns != 0) and ((silenceRun * VAD_FRAME_MS) > VAD_SILENCE_TIMEOUT):
 				thresholdSilenceMet = True
-			GPIO.output(config['raspberrypi']['rec_light'], GPIO.HIGH)
+			gpio.output(config['raspberrypi']['rec_light'], gpio.HIGH)
 
 		if debug: print ("Debug: End recording")
 
 		# if debug: play_audio(resources_path+'beep.wav', 0, 100)
 
-		GPIO.output(config['raspberrypi']['rec_light'], GPIO.LOW)
+		gpio.output(config['raspberrypi']['rec_light'], gpio.LOW)
 		rf = open(tmp_path + 'recording.wav', 'w')
 		rf.write(audio)
 		rf.close()
@@ -504,7 +506,7 @@ def silence_listener(throwaway_frames):
 
 def start():
 	global audioplaying, p, vad, button_pressed
-	GPIO.add_event_detect(config['raspberrypi']['button'], GPIO.FALLING, callback=detect_button, bouncetime=100) # threaded detection of button press
+	gpio.add_event_detect(config['raspberrypi']['button'], gpio.FALLING, callback=detect_button, bouncetime=100) # threaded detection of button press
 	while True:
 		record_audio = False
 		
@@ -574,12 +576,12 @@ def setup():
 	for sig in (signal.SIGABRT, signal.SIGILL, signal.SIGINT, signal.SIGSEGV, signal.SIGTERM):
 		signal.signal(sig, cleanup)
 
-	GPIO.setwarnings(False)
-	GPIO.cleanup()
-	GPIO.setmode(GPIO.BCM)
-	GPIO.setup(config['raspberrypi']['button'], GPIO.IN, pull_up_down=GPIO.PUD_UP)
-	GPIO.setup(config['raspberrypi']['lights'], GPIO.OUT)
-	GPIO.output(config['raspberrypi']['lights'], GPIO.LOW)
+	gpio.setwarnings(False)
+	gpio.cleanup()
+	gpio.setmode(gpio.BCM)
+	gpio.setup(config['raspberrypi']['button'], gpio.IN, pull_up_down=gpio.PUD_UP)
+	gpio.setup(config['raspberrypi']['lights'], gpio.OUT)
+	gpio.output(config['raspberrypi']['lights'], gpio.LOW)
 	while internet_on() == False:
 		print(".")
 	token = gettoken()
@@ -587,14 +589,14 @@ def setup():
 		while True:
 			for x in range(0, 5):
 				time.sleep(.1)
-				GPIO.output(config['raspberrypi']['rec_light'], GPIO.HIGH)
+				gpio.output(config['raspberrypi']['rec_light'], gpio.HIGH)
 				time.sleep(.1)
-				GPIO.output(config['raspberrypi']['rec_light'], GPIO.LOW)
+				gpio.output(config['raspberrypi']['rec_light'], gpio.LOW)
 	for x in range(0, 5):
 		time.sleep(.1)
-		GPIO.output(config['raspberrypi']['plb_light'], GPIO.HIGH)
+		gpio.output(config['raspberrypi']['plb_light'], gpio.HIGH)
 		time.sleep(.1)
-		GPIO.output(config['raspberrypi']['plb_light'], GPIO.LOW)
+		gpio.output(config['raspberrypi']['plb_light'], gpio.LOW)
 	if (silent == False): play_audio(resources_path+"hello.mp3")
 
 
