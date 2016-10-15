@@ -37,7 +37,7 @@ import alexapi.config
 
 with open(alexapi.config.filename, 'r') as stream:
 	config = yaml.load(stream)
-Settings
+# Settings
 #button = 18 		# GPIO Pin with button connected
 button = port.PA20 		# GPIO Pin with button connected
 #plb_light = 24		# GPIO Pin for the playback/activity light
@@ -48,7 +48,11 @@ lights = [plb_light, rec_light] 	# GPIO Pins with LED's connected
 #device = "plughw:1" # Name of your microphone/sound card in arecord -L
 device = "plughw:audiocodec" # Name of your microphone/sound card in arecord -L
 playlists = set(['pls','m3u','ash']) 
-
+Client_ID = "amzn1.application-oa2-client.899e96f17e2e4258b8ad54e30c9910b8"
+Client_Secret = "a239352f1846d901c47b98f8ede142f4711f124415d3b2c5834e5a47f7c8b492"
+ProductID = "AlexaPi"
+Security_Profile_Description = "Alexa"
+Security_Profile_ID = "amzn1.application.299d337757264d039369ebabcb11f02c"
 #Get arguments
 parser = optparse.OptionParser()
 parser.add_option('-s', '--silent',
@@ -139,11 +143,11 @@ def internet_on():
 
 def gettoken():
 	token = mc.get("access_token")
-	refresh = config['alexa']['refresh_token']
+	refresh = refresh_token
 	if token:
 		return token
 	elif refresh:
-		payload = {"client_id" : config['alexa']['Client_ID'], "client_secret" : config['alexa']['Client_Secret'], "refresh_token" : refresh, "grant_type" : "refresh_token", }
+		payload = {"client_id" : Client_ID, "client_secret" : Client_Secret, "refresh_token" : refresh, "grant_type" : "refresh_token", }
 		url = "https://api.amazon.com/auth/o2/token"
 		r = requests.post(url, data = payload)
 		resp = json.loads(r.text)
@@ -592,11 +596,11 @@ def setup():
 #	gpio.setmode(gpio.BCM)
 	gpio.init()
 #	gpio.setup(config['raspberrypi']['button'], gpio.IN, pull_up_down=gpio.PUD_UP)
-	gpio.setcfg([button, gpio.INPUT)
-        gpio.pullup([button, gpio.PULLUP)
+	gpio.setcfg(button, gpio.INPUT)
+        gpio.pullup(button, gpio.PULLUP)
 #	gpio.setup(config['raspberrypi']['lights'], gpio.OUT)
 	gpio.setcfg(lights[0], gpio.OUTPUT)
-        gpio.setcfg(lights[1] gpio.OUTPUT)
+        gpio.setcfg(lights[1], gpio.OUTPUT)
 #	gpio.output(config['raspberrypi']['lights'], gpio.LOW)
 	gpio.output(lights[0], gpio.LOW)
         gpio.output(lights[1], gpio.LOW)
