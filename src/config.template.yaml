@@ -26,3 +26,6 @@ raspberrypi:
   rec_light: &rec_light 25
   # GPIO Pins with LED's connected
   lights: [*plb_light, *rec_light]
+
+platform:
+  type:
