@@ -26,3 +26,9 @@ raspberrypi:
   rec_light: &rec_light 25
   # GPIO Pins with LED's connected
   lights: [*plb_light, *rec_light]
+  
+orangepilite:
+  button: port.PA20
+  plb_light: &plb_light port.PA9
+  rec_light: &rec_light port.PA8
+  lights: [*plb_light, *rec_light]
