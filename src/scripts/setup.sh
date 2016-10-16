@@ -188,6 +188,7 @@ config_defaults[SecurityProfileID]=""
 config_defaults[ClientID]=""
 config_defaults[ClientSecret]=""
 config_defaults[device]=""
+config_defaults[platform]=""
 
 case ${config_action} in
 
@@ -246,7 +247,10 @@ sed -i -e 's/Client_Secret.*/Client_Secret: "'"${ClientSecret}"'"/g' $CONFIG_FIL
 if [ "${SOC}" == "orangepilite" ]; then
     ${config_defaults[device]}="plughw:audiocodec"
     device=${config_defaults[device]}  
+    ${config_defaults[platform]}=${SOC}
+    platform= ${config_defaults[platform]}
 fi
 sed -i -e 's/device.*/device: "'"${device}"'"/g' $CONFIG_FILE
+sed -i -e 's/platform.*/platform: "'"${platform}"'"/g' $CONFIG_FILE
 
 python ./auth_web.py
