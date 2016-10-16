@@ -12,6 +12,10 @@ CONFIG_FILENAME="config.yaml"
 CONFIG_FILE_SYSTEM="${CONFIG_SYSTEM_DIRECTORY}/${CONFIG_FILENAME}"
 CONFIG_FILE_LOCAL="./${CONFIG_FILENAME}"
 
+# store platform in variable
+SOC=$(uname -n)
+
+
 RUN_USER="alexapi"
 
 if [ "$EUID" -ne 0 ]
@@ -115,6 +119,20 @@ cd $ALEXASRC_DIRECTORY
 wget --output-document ./vlc.py "http://git.videolan.org/?p=vlc/bindings/python.git;a=blob_plain;f=generated/vlc.py;hb=HEAD"
 apt-get install python-dev swig libasound2-dev memcached python-pip python-alsaaudio vlc libpulse-dev python-yaml -y
 pip install -r ./requirements.txt
+
+# Detect platform type and install GPIO library
+if [ "${SOC}" == "orangepilite" ]; then
+cd $ALEXASRC_DIRECTORY
+git clone https://github.com/duxingkei33/orangepi_PC_gpio_pyH3.git
+cd orangepi_PC_gpio_pyH3
+python setup.py install
+fi
+
+if [ "${SOC}" == "raspberrypi" ]; then
+cd $ALEXASRC_DIRECTORY
+apt-get install python-dev python-rpi.gpio
+fi
+
 
 case $shairport in
         [nN] ) ;;
@@ -222,5 +240,6 @@ if [ "${ClientSecret}" == "" ]; then
     ClientSecret="${config_defaults[ClientSecret]}"
 fi
 sed -i -e 's/Client_Secret.*/Client_Secret: "'"${ClientSecret}"'"/g' $CONFIG_FILE
+
 
 python ./auth_web.py
