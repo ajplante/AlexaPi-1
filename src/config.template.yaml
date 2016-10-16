@@ -32,3 +32,6 @@ orangepilite:
   plb_light: &plb_light port.PA9
   rec_light: &rec_light port.PA8
   lights: [*plb_light, *rec_light]
+
+type:
+  platform:
