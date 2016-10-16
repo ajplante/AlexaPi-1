@@ -187,6 +187,7 @@ config_defaults[SecurityProfileDescription]=""
 config_defaults[SecurityProfileID]=""
 config_defaults[ClientID]=""
 config_defaults[ClientSecret]=""
+config_defaults[device]=""
 
 case ${config_action} in
 
@@ -241,5 +242,11 @@ if [ "${ClientSecret}" == "" ]; then
 fi
 sed -i -e 's/Client_Secret.*/Client_Secret: "'"${ClientSecret}"'"/g' $CONFIG_FILE
 
+# detect orangepi and set device ID for itternal microphone
+if [ "${SOC}" == "orangepilite" ]; then
+    ${config_defaults[device]}="plughw:audiocodec"
+    device=${config_defaults[device]}  
+fi
+sed -i -e 's/device.*/device: "'"${device}"'"/g' $CONFIG_FILE
 
 python ./auth_web.py
