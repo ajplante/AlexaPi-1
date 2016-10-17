@@ -35,11 +35,6 @@ import alexapi.config
 
 with open(alexapi.config.filename, 'r') as stream:
 	config = yaml.load(stream)
-if config['type']['platform'] == raspberrypi:
-	import RPi.GPIO as GPIO
-if config['type']['platform'] == orangepilite:
-	from pyA20.gpio import gpio
-	from pyA20.gpio import port
 	
 #Get arguments
 parser = optparse.OptionParser()
