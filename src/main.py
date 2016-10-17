@@ -382,7 +382,7 @@ def process_response(r):
 	else:
 		print("{}(process_response Error){} Status Code: {}".format(bcolors.WARNING, bcolors.ENDC, r.status_code))
 		r.connection.close()
-		GPIO.output(config['raspberrypi']['lights'], GPIO.LOW)
+		lightsDef(LOW)
 		for x in range(0, 3):
 			time.sleep(.2)
 			recLight(HIGH)
