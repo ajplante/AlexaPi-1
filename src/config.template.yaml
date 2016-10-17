@@ -29,9 +29,8 @@ raspberrypi:
   
 orangepilite:
   button: port.PA20
-  plb_light: &plb_light port.PA9
-  rec_light: &rec_light port.PA8
+  plb_light: &plb_light port.PL10
+  rec_light: &rec_light port.PA15
   lights: [*plb_light, *rec_light]
 
-type:
-  platform:
+
