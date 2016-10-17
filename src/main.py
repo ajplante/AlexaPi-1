@@ -121,11 +121,50 @@ def getPlatform():
 		from pyA20.gpio import gpio
 		from pyA20.gpio import port
 		return
-	if platform[1] = 'raspberrypi':
+	if platform[1] == 'raspberrypi':
 		import RPi.GPIO as GPIO
 		return
 	if debug: print("{}Platform set to %s{}".format(bcolors.OKBLUE, bcolors.ENDC)) % platform
 	return platform
+
+def recLight(state):
+	if platform[1] == 'orangepilite':
+		if state == 'LOW':
+			gpio.output(config['ornagepilite']['rec_light'], gpio.LOW)
+		if state == 'HIGH:
+			gpio.output(config['ornagepilite']['rec_light'], gpio.HIGH)
+	if platform[1] == 'raspberrypi':
+		if state == 'LOW':
+			GPIO.output(config['raspberrypi']['rec_light'], GPIO.LOW)
+		if state == 'HIGH:
+			GPIO.output(config['raspberrypi']['rec_light'], GPIO.HIGH)
+	return
+
+def plbLight(state):
+	if platform[1] == 'orangepilite':
+		if state == 'LOW':
+			gpio.output(config['ornagepilite']['plb_light'], gpio.LOW)
+		if state == 'HIGH:
+			gpio.output(config['ornagepilite']['plb_light'], gpio.HIGH)
+	if platform[1] == 'raspberrypi':
+		if state == 'LOW':
+			GPIO.output(config['raspberrypi']['plb_light'], GPIO.LOW)
+		if state == 'HIGH:
+			GPIO.output(config['raspberrypi']['plb_light'], GPIO.HIGH)
+	return
+
+def lightsDef(state):
+	if platform[1] == 'orangepilite':
+		if state == 'LOW':
+			gpio.output(config['ornagepilite']['lights'], gpio.LOW)
+		if state == 'HIGH:
+			gpio.output(config['ornagepilite']['lights'], gpio.HIGH)
+	if platform[1] == 'raspberrypi':
+		if state == 'LOW':
+			GPIO.output(config['raspberrypi']['lights'], GPIO.LOW)
+		if state == 'HIGH:
+			GPIO.output(config['raspberrypi']['lights'], GPIO.HIGH)
+	return
 
 def internet_on():
 	print("Checking Internet Connection...")
@@ -271,12 +310,12 @@ def process_response(r):
 		if 'directives' in j['messageBody']:
 			if len(j['messageBody']['directives']) == 0:
 				if debug: print("0 Directives received")
-				GPIO.output(config['raspberrypi']['rec_light'], GPIO.LOW)
-				GPIO.output(config['raspberrypi']['plb_light'], GPIO.LOW)
+				recLight(LOW)
+				plbLight(LOW)
 			for directive in j['messageBody']['directives']:
 				if directive['namespace'] == 'SpeechSynthesizer':
 					if directive['name'] == 'speak':
-						GPIO.output(config['raspberrypi']['rec_light'], GPIO.LOW)
+						recLight(LOW)
 						play_audio("file://" + tmp_path + directive['payload']['audioContent'].lstrip("cid:")+".mp3")
 					for directive in j['messageBody']['directives']: # if Alexa expects a response
 						if directive['namespace'] == 'SpeechRecognizer': # this is included in the same string as above if a response was expected
@@ -333,12 +372,12 @@ def process_response(r):
 			
 		return
 	elif r.status_code == 204:
-		GPIO.output(config['raspberrypi']['rec_light'], GPIO.LOW)
+		recLight(LOW)
 		for x in range(0, 3):
 			time.sleep(.2)
-			GPIO.output(config['raspberrypi']['plb_light'], GPIO.HIGH)
+			plbLight(HIGH)
 			time.sleep(.2)
-			GPIO.output(config['raspberrypi']['plb_light'], GPIO.LOW)
+			plbLight(LOW)
 		if debug: print("{}Request Response is null {}(This is OKAY!){}".format(bcolors.OKBLUE, bcolors.OKGREEN, bcolors.ENDC))
 	else:
 		print("{}(process_response Error){} Status Code: {}".format(bcolors.WARNING, bcolors.ENDC, r.status_code))
@@ -346,9 +385,9 @@ def process_response(r):
 		GPIO.output(config['raspberrypi']['lights'], GPIO.LOW)
 		for x in range(0, 3):
 			time.sleep(.2)
-			GPIO.output(config['raspberrypi']['rec_light'], GPIO.HIGH)
+			recLight(HIGH)
 			time.sleep(.2)
-			GPIO.output(config['raspberrypi']['lights'], GPIO.LOW)
+			lightsDef(LOW)
 
 
 
@@ -358,7 +397,7 @@ def play_audio(file, offset=0, overRideVolume=0):
 		file = tuneinplaylist(file)
 	global nav_token, p, audioplaying
 	if debug: print("{}Play_Audio Request for:{} {}".format(bcolors.OKBLUE, bcolors.ENDC, file))
-	GPIO.output(config['raspberrypi']['plb_light'], GPIO.HIGH)
+	plbLight(HIGH)
 	i = vlc.Instance('--aout=alsa') # , '--alsa-audio-device=mono', '--file-logging', '--logfile=vlc-log.txt')
 	m = i.media_new(file)
 	p = i.media_player_new()
@@ -376,8 +415,7 @@ def play_audio(file, offset=0, overRideVolume=0):
 	p.play()
 	while audioplaying:
 		continue
-	GPIO.output(config['raspberrypi']['plb_light'], GPIO.LOW)
-
+	plbLight(LOW)
 		
 def tuneinplaylist(url):
 	global tunein_parser
@@ -438,22 +476,22 @@ def state_callback(event, player):
 		streamid = ""
 		nav_token = ""
 
-def detect_button(channel):
-        global button_pressed
-        buttonPress = time.time()
-        button_pressed = True
-        if debug: print("{}Button Pressed! Recording...{}".format(bcolors.OKBLUE, bcolors.ENDC))
-        time.sleep(.5) # time for the button input to settle down
-        while (GPIO.input(config['raspberrypi']['button'])==0):
-                button_pressed = True
-                time.sleep(.1)
-                if time.time() - buttonPress > 10: # pressing button for 10 seconds triggers a system halt
-                	play_audio(resources_path+'alexahalt.mp3')
-                	if debug: print("{} -- 10 second putton press.  Shutting down. -- {}".format(bcolors.WARNING, bcolors.ENDC))
-                	os.system("halt")
-        if debug: print("{}Recording Finished.{}".format(bcolors.OKBLUE, bcolors.ENDC))
-        button_pressed = False
-        time.sleep(.5) # more time for the button to settle down
+# def detect_button(channel):
+#        global button_pressed
+#        buttonPress = time.time()
+#        button_pressed = True
+#        if debug: print("{}Button Pressed! Recording...{}".format(bcolors.OKBLUE, bcolors.ENDC))
+#        time.sleep(.5) # time for the button input to settle down
+#        while (GPIO.input(config['raspberrypi']['button'])==0):
+#                button_pressed = True
+#                time.sleep(.1)
+#                if time.time() - buttonPress > 10: # pressing button for 10 seconds triggers a system halt
+#                	play_audio(resources_path+'alexahalt.mp3')
+#                	if debug: print("{} -- 10 second putton press.  Shutting down. -- {}".format(bcolors.WARNING, bcolors.ENDC))
+#                	os.system("halt")
+#        if debug: print("{}Recording Finished.{}".format(bcolors.OKBLUE, bcolors.ENDC))
+#        button_pressed = False
+#        time.sleep(.5) # more time for the button to settle down
 		
 def silence_listener(throwaway_frames):
 		global button_pressed
@@ -502,13 +540,12 @@ def silence_listener(throwaway_frames):
 			# (allow user to speak for total of max recording length if they haven't said anything yet)
 			if (numSilenceRuns != 0) and ((silenceRun * VAD_FRAME_MS) > VAD_SILENCE_TIMEOUT):
 				thresholdSilenceMet = True
-			GPIO.output(config['raspberrypi']['rec_light'], GPIO.HIGH)
+			recLight(HIGH)
 
 		if debug: print ("Debug: End recording")
 
 		# if debug: play_audio(resources_path+'beep.wav', 0, 100)
-
-		GPIO.output(config['raspberrypi']['rec_light'], GPIO.LOW)
+		recLight(
 		rf = open(tmp_path + 'recording.wav', 'w')
 		rf.write(audio)
 		rf.close()
@@ -517,65 +554,65 @@ def silence_listener(throwaway_frames):
 
 def start():
 	global audioplaying, p, vad, button_pressed
-	GPIO.add_event_detect(config['raspberrypi']['button'], GPIO.FALLING, callback=detect_button, bouncetime=100) # threaded detection of button press
-	while True:
-		record_audio = False
+#	GPIO.add_event_detect(config['raspberrypi']['button'], GPIO.FALLING, callback=detect_button, bouncetime=100) # threaded detection of button press
+#	while True:
+#		record_audio = False
 		
-		# Enable reading microphone raw data
-		inp = alsaaudio.PCM(alsaaudio.PCM_CAPTURE, alsaaudio.PCM_NORMAL, config['sound']['device'])
-		inp.setchannels(1)
-		inp.setrate(16000)
-		inp.setformat(alsaaudio.PCM_FORMAT_S16_LE)
-		inp.setperiodsize(1024)
-		audio = ""
-		start = time.time()
+#		# Enable reading microphone raw data
+#		inp = alsaaudio.PCM(alsaaudio.PCM_CAPTURE, alsaaudio.PCM_NORMAL, config['sound']['device'])
+#		inp.setchannels(1)
+#		inp.setrate(16000)
+#		inp.setformat(alsaaudio.PCM_FORMAT_S16_LE)
+#		inp.setperiodsize(1024)
+#		audio = ""
+#		start = time.time()
 
-                while record_audio == False:
+#                while record_audio == False:
 
-			time.sleep(.1)
+#		time.sleep(.1)
 
 			# Process microphone audio via PocketSphinx, listening for trigger word
-			while decoder.hyp() == None and button_pressed == False:
-				# Read from microphone
-				l,buf = inp.read()
-				# Detect if keyword/trigger word was said
-				decoder.process_raw(buf, False, False)
+		while decoder.hyp() == None and button_pressed == False:
+			# Read from microphone
+			l,buf = inp.read()
+			# Detect if keyword/trigger word was said
+			decoder.process_raw(buf, False, False)
 
-			# if trigger word was said
-			if decoder.hyp() != None:
-				if audioplaying: p.stop()
-				start = time.time()
-				record_audio = True
-				play_audio(resources_path+'alexayes.mp3', 0)
-			elif button_pressed:
-				if audioplaying: p.stop()
-				record_audio = True
+		# if trigger word was said
+		if decoder.hyp() != None:
+			if audioplaying: p.stop()
+			start = time.time()
+			record_audio = True
+			play_audio(resources_path+'alexayes.mp3', 0)
+#		elif button_pressed:
+#			if audioplaying: p.stop()
+#			record_audio = True
 
-		# do the following things if either the button has been pressed or the trigger word has been said
-		if debug: print ("detected the edge, setting up audio")
+	# do the following things if either the button has been pressed or the trigger word has been said
+	if debug: print ("detected the edge, setting up audio")
 
-		# To avoid overflows close the microphone connection
-		inp.close()
+	# To avoid overflows close the microphone connection
+	inp.close()
 
-		# clean up the temp directory
-		if debug == False:
-			for file in os.listdir(tmp_path):
-				file_path = os.path.join(tmp_path, file)
-				try:
-					if os.path.isfile(file_path):
-						os.remove(file_path)
-				except Exception as e:
-					print(e)
+	# clean up the temp directory
+	if debug == False:
+		for file in os.listdir(tmp_path):
+			file_path = os.path.join(tmp_path, file)
+			try:
+				if os.path.isfile(file_path):
+					os.remove(file_path)
+			except Exception as e:
+				print(e)
 
-		if debug: print "Starting to listen..."
-		silence_listener(VAD_THROWAWAY_FRAMES)
+	if debug: print "Starting to listen..."
+	silence_listener(VAD_THROWAWAY_FRAMES)
 
-		if debug: print "Debug: Sending audio to be processed"
-		alexa_speech_recognizer()
+	if debug: print "Debug: Sending audio to be processed"
+	alexa_speech_recognizer()
 		
-		# Now that request is handled restart audio decoding
-		decoder.end_utt()
-		decoder.start_utt()
+	# Now that request is handled restart audio decoding
+	decoder.end_utt()
+	decoder.start_utt()
 
 
 def cleanup(signal, frame):
@@ -587,14 +624,14 @@ def setup():
 	for sig in (signal.SIGABRT, signal.SIGILL, signal.SIGINT, signal.SIGSEGV, signal.SIGTERM):
 		signal.signal(sig, cleanup)
 	platform = getPlatform()
-	if platform[1] = 'raspberrypi':
+	if platform[1] == 'raspberrypi':
 		GPIO.setwarnings(False)
 		GPIO.cleanup()
 		GPIO.setmode(GPIO.BCM)
 		GPIO.setup(config['raspberrypi']['button'], GPIO.IN, pull_up_down=GPIO.PUD_UP)
 		GPIO.setup(config['raspberrypi']['lights'], GPIO.OUT)
 		GPIO.output(config['raspberrypi']['lights'], GPIO.LOW)
-	if platform[1] = 'orangepilite':
+	if platform[1] == 'orangepilite':
 		gpio.init()
 		gpio.setcfg(config['orangepilite']['button'], gpio.INPUT)
         	gpio.pullup(config['orangepilite']['button'], gpio.PULLUP)
@@ -609,14 +646,14 @@ def setup():
 		while True:
 			for x in range(0, 5):
 				time.sleep(.1)
-				GPIO.output(config['raspberrypi']['rec_light'], GPIO.HIGH)
+				recLight(HIGH)
 				time.sleep(.1)
-				GPIO.output(config['raspberrypi']['rec_light'], GPIO.LOW)
+				recLight(LOW)
 	for x in range(0, 5):
 		time.sleep(.1)
-		GPIO.output(config['raspberrypi']['plb_light'], GPIO.HIGH)
+		plbLight(HIGH)
 		time.sleep(.1)
-		GPIO.output(config['raspberrypi']['plb_light'], GPIO.LOW)
+		plbLight(LOW)
 	if (silent == False): play_audio(resources_path+"hello.mp3")
 
 
