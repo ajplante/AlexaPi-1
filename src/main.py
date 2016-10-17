@@ -23,6 +23,7 @@ import getch
 import sys
 import fileinput
 import datetime
+import platform
 
 import tunein
 import webrtcvad
@@ -113,6 +114,18 @@ class bcolors:
 	ENDC = '\033[0m'
 	BOLD = '\033[1m'
 	UNDERLINE = '\033[4m'
+
+def getPlatform():
+	platform = platform.uname()
+	if platform[1] == 'orangepilite':
+		from pyA20.gpio import gpio
+		from pyA20.gpio import port
+		return
+	if platform[1] = 'raspberrypi':
+		import RPi.GPIO as GPIO
+		return
+	if debug: print("{}Platform set to %s{}".format(bcolors.OKBLUE, bcolors.ENDC)) % platform
+	return platform
 
 def internet_on():
 	print("Checking Internet Connection...")
@@ -573,13 +586,22 @@ def cleanup(signal, frame):
 def setup():
 	for sig in (signal.SIGABRT, signal.SIGILL, signal.SIGINT, signal.SIGSEGV, signal.SIGTERM):
 		signal.signal(sig, cleanup)
-
-	GPIO.setwarnings(False)
-	GPIO.cleanup()
-	GPIO.setmode(GPIO.BCM)
-	GPIO.setup(config['raspberrypi']['button'], GPIO.IN, pull_up_down=GPIO.PUD_UP)
-	GPIO.setup(config['raspberrypi']['lights'], GPIO.OUT)
-	GPIO.output(config['raspberrypi']['lights'], GPIO.LOW)
+	platform = getPlatform()
+	if platform = 'raspberrypi':
+		GPIO.setwarnings(False)
+		GPIO.cleanup()
+		GPIO.setmode(GPIO.BCM)
+		GPIO.setup(config['raspberrypi']['button'], GPIO.IN, pull_up_down=GPIO.PUD_UP)
+		GPIO.setup(config['raspberrypi']['lights'], GPIO.OUT)
+		GPIO.output(config['raspberrypi']['lights'], GPIO.LOW)
+	if platform = 'orangepilite':
+		gpio.init()
+		gpio.setcfg(config['orangepilite']['button'], gpio.INPUT)
+        	gpio.pullup(config['orangepilite']['button'], gpio.PULLUP)
+		gpio.setcfg(config['orangepilite']['lights[0]'], gpio.OUTPUT)
+        	gpio.setcfg(config['orangepilite']['lights[1]'], gpio.OUTPUT)
+		gpio.output(config['orangepilite']['lights[0]'], gpio.LOW)
+        	gpio.output(config['orangepilite']['lights[1]'], gpio.LOW)
 	while internet_on() == False:
 		print(".")
 	token = gettoken()
