@@ -3,7 +3,7 @@
 sound:
   # Name of your microphone/soundcard in arecord -L
   # you can also try setting it to 'default'
-  device: "plughw:1"
+  device: "default"
 
 # Amazon Alexa settings
 alexa:
