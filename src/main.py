@@ -587,14 +587,14 @@ def setup():
 	for sig in (signal.SIGABRT, signal.SIGILL, signal.SIGINT, signal.SIGSEGV, signal.SIGTERM):
 		signal.signal(sig, cleanup)
 	platform = getPlatform()
-	if platform = 'raspberrypi':
+	if platform[1] = 'raspberrypi':
 		GPIO.setwarnings(False)
 		GPIO.cleanup()
 		GPIO.setmode(GPIO.BCM)
 		GPIO.setup(config['raspberrypi']['button'], GPIO.IN, pull_up_down=GPIO.PUD_UP)
 		GPIO.setup(config['raspberrypi']['lights'], GPIO.OUT)
 		GPIO.output(config['raspberrypi']['lights'], GPIO.LOW)
-	if platform = 'orangepilite':
+	if platform[1] = 'orangepilite':
 		gpio.init()
 		gpio.setcfg(config['orangepilite']['button'], gpio.INPUT)
         	gpio.pullup(config['orangepilite']['button'], gpio.PULLUP)
