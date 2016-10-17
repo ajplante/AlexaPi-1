@@ -65,7 +65,8 @@ else
         if [ $UID_TEST -eq 0 ]; then
             echo "user already exists. That's cool - using that."
         else
-            useradd --system --user-group $RUN_USER 2>/dev/null
+            useradd --system --user-group -m $RUN_USER 2>/dev/null
+	    adduser $RUN_USER audio > /dev/null
             gpasswd -a $RUN_USER gpio > /dev/null
             gpasswd -a $RUN_USER audio > /dev/null
             if [ "$?" -eq "0" ]; then
@@ -188,7 +189,6 @@ config_defaults[SecurityProfileID]=""
 config_defaults[ClientID]=""
 config_defaults[ClientSecret]=""
 config_defaults[device]=""
-config_defaults[platform]=""
 
 case ${config_action} in
 
@@ -242,15 +242,5 @@ if [ "${ClientSecret}" == "" ]; then
     ClientSecret="${config_defaults[ClientSecret]}"
 fi
 sed -i -e 's/Client_Secret.*/Client_Secret: "'"${ClientSecret}"'"/g' $CONFIG_FILE
-
-# detect orangepi and set device ID for itternal microphone
-if [ "${SOC}" == "orangepilite" ]; then
-    ${config_defaults[device]}="plughw:audiocodec"
-    device=${config_defaults[device]}  
-    ${config_defaults[platform]}=${SOC}
-    platform= ${config_defaults[platform]}
-fi
-sed -i -e 's/device.*/device: "'"${device}"'"/g' $CONFIG_FILE
-sed -i -e 's/platform.*/platform: "'"${platform}"'"/g' $CONFIG_FILE
 
 python ./auth_web.py
